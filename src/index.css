@@ -1,0 +1,423 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── variables ───────────────────────────────────────── */
+:root {
+  --bg: #1a2e1a;
+  --bg-elev: #223322;
+  --text: #e8f0e8;
+  --muted: #8aaa8a;
+  --border: #3a5a3a;
+  --card: #1e331e;
+  --accent: #5cb85c;
+  --accent-glow: rgba(92, 184, 92, 0.5);
+
+  /* park palette */
+  --grass-1: #4a8c3f;
+  --grass-2: #3d7a34;
+  --grass-3: #5a9e4f;
+  --sky-day: #87ceeb;
+  --sky-night: #0f1b2d;
+}
+
+/* ── reset ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+#root { height: 100%; }
+
+/* ── app shell ───────────────────────────────────────── */
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.8s ease;
+}
+.app.night { --bg: #0f1b0f; --bg-elev: #162016; --card: #121e12; }
+
+/* ── home button ─────────────────────────────────────── */
+.home-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.home-btn:hover { background: rgba(0, 0, 0, 0.7); }
+
+/* ── header ──────────────────────────────────────────── */
+.park-header {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.park-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.header-controls { display: flex; gap: 8px; }
+.cycle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cycle-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* ── loading screen ──────────────────────────────────── */
+.loading-screen {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--bg);
+}
+.loading-pokeball {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ee1515 50%, #f0f0f0 50%);
+  border: 3px solid #222;
+  position: relative;
+  animation: spin 1s linear infinite;
+}
+.loading-pokeball::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 3px solid #222;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--muted); font-size: 14px; }
+.loading-bar-track {
+  width: 200px;
+  height: 6px;
+  background: var(--bg-elev);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.loading-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.loading-pct { color: var(--muted); font-size: 12px; }
+
+/* ── park viewport ───────────────────────────────────── */
+.park-viewport {
+  flex: 1;
+  overflow: auto;
+  cursor: grab;
+  scrollbar-width: none;
+}
+.park-viewport::-webkit-scrollbar { display: none; }
+.park-viewport:active { cursor: grabbing; }
+
+.park-world {
+  position: relative;
+  image-rendering: pixelated;
+  /* Tiled grass background */
+  background:
+    radial-gradient(circle at 20% 30%, var(--grass-3) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, var(--grass-3) 0%, transparent 35%),
+    radial-gradient(circle at 50% 80%, var(--grass-1) 0%, transparent 45%),
+    linear-gradient(180deg, var(--grass-2) 0%, var(--grass-1) 100%);
+  transition: filter 0.8s ease;
+}
+.night .park-world {
+  filter: brightness(0.45) saturate(0.6);
+}
+
+/* decorative elements */
+.park-deco {
+  position: absolute;
+  font-size: 48px;
+  pointer-events: none;
+  opacity: 0.6;
+  filter: grayscale(0.2);
+  user-select: none;
+}
+.park-deco.tree { font-size: 64px; opacity: 0.5; }
+.park-deco.pond { font-size: 56px; opacity: 0.4; }
+.park-deco.flower { font-size: 32px; opacity: 0.5; }
+
+/* ── park sprites ────────────────────────────────────── */
+.park-sprite {
+  position: absolute;
+  cursor: pointer;
+  transition: filter 0.15s;
+  z-index: 10;
+}
+.park-sprite img {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  display: block;
+  pointer-events: none;
+}
+.park-sprite.walking img {
+  animation: bounce 0.4s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* hover glow + name */
+.sprite-name {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  text-transform: capitalize;
+}
+.park-sprite:hover .sprite-name { opacity: 0.85; }
+.park-sprite:hover img {
+  filter: drop-shadow(0 0 6px var(--accent-glow)) drop-shadow(0 0 12px var(--accent-glow));
+}
+
+/* pin badge */
+.pin-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* ── card overlay ────────────────────────────────────── */
+.card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } }
+
+.card-container {
+  position: relative;
+  display: flex;
+  gap: 0;
+  max-width: 640px;
+  width: 90vw;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: cardIn 0.25s ease-out;
+}
+@keyframes cardIn {
+  from { transform: scale(0.9) translateY(20px); opacity: 0; }
+}
+
+.card-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 10;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.card-close:hover { color: var(--text); }
+
+/* artwork side */
+.card-artwork {
+  flex: 0 0 45%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0,0,0,0.15);
+  position: relative;
+}
+.card-artwork img {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  image-rendering: auto;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+}
+.card-cry-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.15s;
+}
+.card-cry-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* info side */
+.card-info {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+.card-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.card-name-row h2 {
+  font-size: 24px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.card-dex-num {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.card-genus {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+}
+.card-types { display: flex; gap: 6px; }
+.type-badge {
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  text-transform: capitalize;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.card-flavor {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+}
+.card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.stat-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* pin button */
+.pin-btn {
+  margin-top: auto;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pin-btn:hover { background: rgba(255,255,255,0.15); }
+.pin-btn.pinned {
+  background: rgba(92, 184, 92, 0.15);
+  border-color: var(--accent);
+}
+
+/* ── responsive ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  .card-container {
+    flex-direction: column;
+    max-height: 90vh;
+  }
+  .card-artwork {
+    flex: 0 0 auto;
+    padding: 16px;
+  }
+  .card-artwork img { max-width: 160px; }
+  .card-info { padding: 16px; }
+  .park-header h1 { font-size: 14px; }
+}
