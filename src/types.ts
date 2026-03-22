@@ -2,31 +2,32 @@
 export interface PokemonData {
   id: number
   name: string
-  genus: string          // "the Seed Pokémon"
+  genus: string
   types: string[]
-  height: number         // decimetres → we'll convert to display
-  weight: number         // hectograms → we'll convert to display
-  genderRate: number     // -1 = genderless, 0-8 = eighths female
+  height: number
+  weight: number
+  genderRate: number
   habitat: string | null
-  flavorText: string     // debut generation pokedex entry
-  spriteUrl: string      // small pixel sprite (overworld)
-  artworkUrl: string     // official artwork (focus view)
-  cryUrl: string | null  // audio cry
+  flavorText: string
+  spriteUrl: string
+  artworkUrl: string
+  cryUrl: string | null
 }
 
 /** A pokemon currently in the park */
 export interface ParkPokemon {
-  id: number             // pokedex number
+  id: number
   data: PokemonData
-  x: number              // position in park (px)
-  y: number              // position in park (px)
-  targetX: number        // wandering destination
-  targetY: number        // wandering destination
+  x: number
+  y: number
+  targetX: number
+  targetY: number
   facingLeft: boolean
-  state: 'walking' | 'idle' | 'held' | 'gathering'
-  idleTimer: number      // ms remaining in idle
+  state: 'walking' | 'idle' | 'held' | 'gathering' | 'smelling' | 'sitting'
+  idleTimer: number
   pinned: boolean
-  gatheringId?: number   // which gathering group this pokemon belongs to
+  gatheringId?: number
+  interactingWith?: string // park object id
 }
 
 /** A group of pokemon playing together */

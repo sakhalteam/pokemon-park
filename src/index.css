@@ -161,30 +161,93 @@ body {
 .park-world {
   position: relative;
   image-rendering: pixelated;
-  /* Tiled grass background */
   background:
-    radial-gradient(circle at 20% 30%, var(--grass-3) 0%, transparent 40%),
-    radial-gradient(circle at 70% 60%, var(--grass-3) 0%, transparent 35%),
-    radial-gradient(circle at 50% 80%, var(--grass-1) 0%, transparent 45%),
-    linear-gradient(180deg, var(--grass-2) 0%, var(--grass-1) 100%);
+    /* light grass patches */
+    radial-gradient(ellipse 180px 120px at 15% 25%, rgba(110, 180, 80, 0.3) 0%, transparent 100%),
+    radial-gradient(ellipse 220px 160px at 65% 55%, rgba(100, 175, 70, 0.25) 0%, transparent 100%),
+    radial-gradient(ellipse 200px 140px at 40% 75%, rgba(115, 185, 85, 0.2) 0%, transparent 100%),
+    radial-gradient(ellipse 160px 130px at 85% 30%, rgba(105, 170, 75, 0.2) 0%, transparent 100%),
+    radial-gradient(ellipse 180px 100px at 25% 60%, rgba(120, 190, 90, 0.15) 0%, transparent 100%),
+    /* darker grass patches */
+    radial-gradient(ellipse 300px 200px at 50% 40%, rgba(50, 100, 40, 0.15) 0%, transparent 100%),
+    radial-gradient(ellipse 250px 180px at 80% 70%, rgba(45, 90, 35, 0.12) 0%, transparent 100%),
+    /* base */
+    linear-gradient(180deg, var(--grass-2) 0%, var(--grass-1) 60%, #3a7030 100%);
   transition: filter 0.8s ease;
 }
 .night .park-world {
-  filter: brightness(0.45) saturate(0.6);
+  filter: brightness(0.4) saturate(0.5);
+}
+
+/* dirt paths */
+.park-path {
+  position: absolute;
+  pointer-events: none;
+}
+.park-path.path-h {
+  height: 28px;
+  background: linear-gradient(180deg, rgba(140, 110, 70, 0.35), rgba(130, 100, 60, 0.25));
+  border-radius: 14px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+.park-path.path-v {
+  width: 28px;
+  background: linear-gradient(90deg, rgba(140, 110, 70, 0.35), rgba(130, 100, 60, 0.25));
+  border-radius: 14px;
+  box-shadow: inset 1px 0 3px rgba(0,0,0,0.1);
+}
+.park-path-circle {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  background: radial-gradient(circle, rgba(140, 110, 70, 0.3), rgba(130, 100, 60, 0.15));
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* pond */
+.park-pond {
+  position: absolute;
+  width: 160px;
+  height: 100px;
+  background: radial-gradient(ellipse, rgba(70, 140, 200, 0.5), rgba(50, 120, 180, 0.3), transparent);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pondShimmer 4s ease-in-out infinite;
+}
+@keyframes pondShimmer {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.9; }
+}
+.night .park-pond {
+  background: radial-gradient(ellipse, rgba(30, 60, 100, 0.6), rgba(20, 40, 80, 0.3), transparent);
 }
 
 /* decorative elements */
 .park-deco {
   position: absolute;
-  font-size: 48px;
   pointer-events: none;
-  opacity: 0.6;
-  filter: grayscale(0.2);
   user-select: none;
+  transform: translate(-50%, -50%);
 }
-.park-deco.tree { font-size: 64px; opacity: 0.5; }
+/* sizes */
+.park-deco.sm { font-size: 28px; }
+.park-deco.md { font-size: 40px; }
+.park-deco.lg { font-size: 64px; }
+
+/* type-specific tweaks */
+.park-deco.tree { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25)); }
+.park-deco.flower { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); }
+.park-deco.rock { filter: grayscale(0.3) drop-shadow(0 2px 3px rgba(0,0,0,0.2)); }
+.park-deco.mushroom { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)); }
+.park-deco.berry { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15)); }
+.park-deco.sign { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2)); }
+.park-deco.lamp { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+.night .park-deco.lamp {
+  filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.6)) drop-shadow(0 0 24px rgba(255, 180, 80, 0.3));
+}
 .park-deco.pond { font-size: 56px; opacity: 0.4; }
-.park-deco.flower { font-size: 32px; opacity: 0.5; }
 
 /* ── park sprites ────────────────────────────────────── */
 .park-sprite {
@@ -274,6 +337,33 @@ body {
   20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) translateY(-10px); }
   80% { opacity: 0.8; transform: translate(-50%, -50%) scale(1) translateY(-30px); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(0.6) translateY(-50px); }
+}
+
+/* smelling a flower */
+.park-sprite.smelling img {
+  animation: smellBob 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 200, 150, 0.5));
+}
+@keyframes smellBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-3px) rotate(-8deg); }
+  60% { transform: translateY(-1px) rotate(4deg); }
+}
+.park-sprite.smelling .sprite-name {
+  opacity: 0.8;
+}
+
+/* sitting on a bench */
+.park-sprite.sitting img {
+  animation: sitBreathe 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(180, 220, 160, 0.4));
+}
+@keyframes sitBreathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.park-sprite.sitting .sprite-name {
+  opacity: 0.8;
 }
 
 /* hover glow + name */
