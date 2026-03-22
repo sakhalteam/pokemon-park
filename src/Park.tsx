@@ -149,7 +149,7 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
               onClickPokemon(p.id)
             }}
           >
-            <span className="sprite-name">{p.data.name}</span>
+            <span className="sprite-name" style={p.facingLeft ? { transform: 'translateX(-50%) scaleX(-1)' } : undefined}>{p.data.name}</span>
             {p.pinned && <span className="pin-badge">📌</span>}
             <img
               src={p.data.spriteUrl}
