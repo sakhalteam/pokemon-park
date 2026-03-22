@@ -9,9 +9,9 @@ interface Props {
   timeOfDay: TimeOfDay
 }
 
-const SPEED = 0.4 // px per frame (~24px/sec)
-const GATHER_RADIUS = 100 // drop within this distance to start a gathering
-const GATHER_CIRCLE_RADIUS = 50 // how far apart they stand in the circle
+const SPEED = 0.4
+const GATHER_RADIUS = 100
+const GATHER_CIRCLE_RADIUS = 50
 const FLOWER_EMOJIS = ['🌸', '🌼', '🌺', '🌷', '🌻', '✨', '💫', '🎶']
 
 let gatheringIdCounter = 0
@@ -36,6 +36,30 @@ function spawnFlowers(cx: number, cy: number, count: number): FlowerParticle[] {
   }))
 }
 
+/** Recalculate circle positions for all pokemon in a gathering */
+function recalcCircle(
+  gatheringPokemonIds: number[],
+  cx: number,
+  cy: number,
+  prev: ParkPokemon[],
+  gId: number,
+): ParkPokemon[] {
+  const angleStep = (Math.PI * 2) / gatheringPokemonIds.length
+  const idSet = new Set(gatheringPokemonIds)
+  return prev.map(p => {
+    if (!idSet.has(p.id)) return p
+    const idx = gatheringPokemonIds.indexOf(p.id)
+    const angle = angleStep * idx - Math.PI / 2
+    return {
+      ...p,
+      state: 'gathering' as const,
+      gatheringId: gId,
+      targetX: cx + Math.cos(angle) * GATHER_CIRCLE_RADIUS,
+      targetY: cy + Math.sin(angle) * GATHER_CIRCLE_RADIUS,
+    }
+  })
+}
+
 export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
@@ -43,19 +67,108 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
   const scrollStart = useRef({ x: 0, y: 0 })
   const animRef = useRef<number>(0)
 
-  // Drag state
   const [heldId, setHeldId] = useState<number | null>(null)
   const heldRef = useRef<number | null>(null)
   const dragOffset = useRef({ x: 0, y: 0 })
   const hasDragged = useRef(false)
 
-  // Gatherings
   const [gatherings, setGatherings] = useState<Gathering[]>([])
+  const gatheringsRef = useRef<Gathering[]>([])
+  const gatheringIntervals = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map())
 
-  // Keep heldRef in sync
   useEffect(() => { heldRef.current = heldId }, [heldId])
+  useEffect(() => { gatheringsRef.current = gatherings }, [gatherings])
 
-  // === Pan: mouse/touch drag on background ===
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    const intervals = gatheringIntervals.current
+    return () => intervals.forEach(i => clearInterval(i))
+  }, [])
+
+  /** Add a pokemon to an existing gathering (recalculate circle) */
+  const joinGathering = useCallback((gId: number, pokemonId: number) => {
+    setGatherings(gs => gs.map(g => {
+      if (g.id !== gId || g.pokemonIds.includes(pokemonId)) return g
+      const newIds = [...g.pokemonIds, pokemonId]
+      return { ...g, pokemonIds: newIds, flowers: [...g.flowers, ...spawnFlowers(g.centerX, g.centerY, 4)] }
+    }))
+    setPokemon(prev => {
+      const g = gatheringsRef.current.find(g => g.id === gId)
+      if (!g) return prev
+      const newIds = g.pokemonIds.includes(pokemonId) ? g.pokemonIds : [...g.pokemonIds, pokemonId]
+      return recalcCircle(newIds, g.centerX, g.centerY, prev, gId)
+    })
+  }, [setPokemon])
+
+  /** Start a brand new gathering */
+  const startGathering = useCallback((pokemonIds: number[], cx: number, cy: number) => {
+    const gId = ++gatheringIdCounter
+    const newGathering: Gathering = {
+      id: gId,
+      centerX: cx,
+      centerY: cy,
+      pokemonIds: pokemonIds,
+      startTime: Date.now(),
+      flowers: spawnFlowers(cx, cy, 8),
+    }
+    setGatherings(g => [...g, newGathering])
+
+    const flowerInterval = setInterval(() => {
+      setGatherings(gs => {
+        const g = gs.find(g => g.id === gId)
+        if (!g) { clearInterval(flowerInterval); return gs }
+        // Cap flowers at 30 to avoid unbounded growth
+        const trimmed = g.flowers.length > 30 ? g.flowers.slice(-20) : g.flowers
+        return gs.map(g => g.id === gId ? { ...g, flowers: [...trimmed, ...spawnFlowers(g.centerX, g.centerY, 2)] } : g)
+      })
+    }, 3000)
+    gatheringIntervals.current.set(gId, flowerInterval)
+
+    setPokemon(prev => recalcCircle(pokemonIds, cx, cy, prev, gId))
+  }, [setPokemon])
+
+  /** Remove a single pokemon from a gathering. Dissolve if < 2 remain. */
+  const leaveGathering = useCallback((gId: number, pokemonId: number) => {
+    setGatherings(gs => {
+      return gs.map(g => {
+        if (g.id !== gId) return g
+        const remaining = g.pokemonIds.filter(id => id !== pokemonId)
+        if (remaining.length < 2) {
+          // Dissolve gathering
+          const interval = gatheringIntervals.current.get(gId)
+          if (interval) { clearInterval(interval); gatheringIntervals.current.delete(gId) }
+          return null as unknown as Gathering
+        }
+        return { ...g, pokemonIds: remaining }
+      }).filter(Boolean)
+    })
+
+    setPokemon(prev => {
+      const g = gatheringsRef.current.find(g => g.id === gId)
+      if (!g) return prev
+      const remaining = g.pokemonIds.filter(id => id !== pokemonId)
+
+      if (remaining.length < 2) {
+        // Free everyone
+        return prev.map(p =>
+          p.gatheringId === gId
+            ? { ...p, state: 'idle' as const, idleTimer: 500 + Math.random() * 1000, gatheringId: undefined }
+            : p
+        )
+      }
+
+      // Recalculate circle for remaining pokemon
+      const updated = recalcCircle(remaining, g.centerX, g.centerY, prev, gId)
+      // Free the leaving pokemon
+      return updated.map(p =>
+        p.id === pokemonId
+          ? { ...p, state: 'idle' as const, gatheringId: undefined, idleTimer: 500 }
+          : p
+      )
+    })
+  }, [setPokemon])
+
+  // === Pan handlers ===
   const onBgPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('.park-sprite')) return
     if ((e.target as HTMLElement).closest('.gathering-flower')) return
@@ -76,7 +189,6 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
       return
     }
 
-    // Dragging a pokemon
     if (heldRef.current !== null) {
       hasDragged.current = true
       const el = containerRef.current!
@@ -101,13 +213,11 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
       return
     }
 
-    // Drop a held pokemon
     if (heldRef.current !== null) {
       const droppedId = heldRef.current
       setHeldId(null)
 
       if (!hasDragged.current) {
-        // It was a click, not a drag — open card
         onClickPokemon(droppedId)
         setPokemon(prev => prev.map(p =>
           p.id === droppedId ? { ...p, state: 'idle' as const, idleTimer: 2000 } : p
@@ -115,70 +225,35 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
         return
       }
 
-      // Check for nearby pokemon to form a gathering
       setPokemon(prev => {
         const dropped = prev.find(p => p.id === droppedId)
         if (!dropped) return prev
 
-        // Find nearby non-held, non-gathering pokemon
+        // Check if dropped near an existing gathering → join it
+        for (const g of gatheringsRef.current) {
+          if (Math.hypot(dropped.x - g.centerX, dropped.y - g.centerY) < GATHER_RADIUS) {
+            joinGathering(g.id, droppedId)
+            return prev // joinGathering handles the state update
+          }
+        }
+
+        // Check for nearby free pokemon to start a new gathering
         const nearby = prev.filter(p =>
           p.id !== droppedId &&
           p.state !== 'held' &&
+          p.state !== 'gathering' &&
           Math.hypot(p.x - dropped.x, p.y - dropped.y) < GATHER_RADIUS
         )
 
         if (nearby.length > 0) {
-          // Start a gathering!
           const gatherGroup = [dropped, ...nearby]
-          const gId = ++gatheringIdCounter
-
-          // Calculate center of the group
           const cx = gatherGroup.reduce((s, p) => s + p.x, 0) / gatherGroup.length
           const cy = gatherGroup.reduce((s, p) => s + p.y, 0) / gatherGroup.length
-
-          // Arrange in a circle
-          const angleStep = (Math.PI * 2) / gatherGroup.length
-          const updatedIds = new Set(gatherGroup.map(p => p.id))
-
-          // Spawn gathering with flowers
-          const newGathering: Gathering = {
-            id: gId,
-            centerX: cx,
-            centerY: cy,
-            pokemonIds: gatherGroup.map(p => p.id),
-            startTime: Date.now(),
-            flowers: spawnFlowers(cx, cy, 12),
-          }
-
-          setGatherings(g => [...g, newGathering])
-
-          // Continuously spawn more flowers
-          const flowerInterval = setInterval(() => {
-            setGatherings(gs => gs.map(g =>
-              g.id === gId
-                ? { ...g, flowers: [...g.flowers, ...spawnFlowers(g.centerX, g.centerY, 4)] }
-                : g
-            ))
-          }, 2000)
-
-          // Store interval for cleanup
-          gatheringIntervals.current.set(gId, flowerInterval)
-
-          return prev.map(p => {
-            if (!updatedIds.has(p.id)) return p
-            const idx = gatherGroup.findIndex(gp => gp.id === p.id)
-            const angle = angleStep * idx - Math.PI / 2
-            return {
-              ...p,
-              state: 'gathering' as const,
-              gatheringId: gId,
-              targetX: cx + Math.cos(angle) * GATHER_CIRCLE_RADIUS,
-              targetY: cy + Math.sin(angle) * GATHER_CIRCLE_RADIUS,
-            }
-          })
+          startGathering(gatherGroup.map(p => p.id), cx, cy)
+          return prev // startGathering handles the state update
         }
 
-        // No nearby pokemon — just drop and idle
+        // No nearby — just drop and idle
         return prev.map(p =>
           p.id === droppedId
             ? { ...p, state: 'idle' as const, idleTimer: 1000 + Math.random() * 2000 }
@@ -186,16 +261,7 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
         )
       })
     }
-  }, [onClickPokemon, setPokemon])
-
-  // Interval refs for gathering flower spawns
-  const gatheringIntervals = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map())
-
-  // Cleanup gathering intervals on unmount
-  useEffect(() => {
-    const intervals = gatheringIntervals.current
-    return () => intervals.forEach(i => clearInterval(i))
-  }, [])
+  }, [onClickPokemon, setPokemon, joinGathering, startGathering])
 
   // === Sprite pointer handlers ===
   const onSpritePointerDown = useCallback((e: React.PointerEvent, pId: number) => {
@@ -203,22 +269,11 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
     e.preventDefault()
     hasDragged.current = false
 
-    // If this pokemon is in a gathering, break it up
+    // If this pokemon is in a gathering, remove just this one
     setPokemon(prev => {
       const p = prev.find(pk => pk.id === pId)
       if (p?.gatheringId) {
-        const gId = p.gatheringId
-        // Clear interval
-        const interval = gatheringIntervals.current.get(gId)
-        if (interval) { clearInterval(interval); gatheringIntervals.current.delete(gId) }
-        // Remove gathering
-        setGatherings(gs => gs.filter(g => g.id !== gId))
-        // Free all pokemon from this gathering
-        return prev.map(pk =>
-          pk.gatheringId === gId
-            ? { ...pk, state: 'idle' as const, idleTimer: 500 + Math.random() * 1000, gatheringId: undefined }
-            : pk
-        )
+        leaveGathering(p.gatheringId, pId)
       }
       return prev
     })
@@ -226,7 +281,6 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
     const el = containerRef.current!
     const rect = el.getBoundingClientRect()
 
-    // Calculate offset from pointer to sprite center
     setPokemon(prev => {
       const p = prev.find(pk => pk.id === pId)
       if (p) {
@@ -238,13 +292,13 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
         }
       }
       return prev.map(pk =>
-        pk.id === pId ? { ...pk, state: 'held' as const } : pk
+        pk.id === pId ? { ...pk, state: 'held' as const, gatheringId: undefined } : pk
       )
     })
 
     setHeldId(pId)
     el.setPointerCapture(e.pointerId)
-  }, [setPokemon])
+  }, [setPokemon, leaveGathering])
 
   // === Animation loop ===
   useEffect(() => {
@@ -254,55 +308,103 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
       const dt = now - lastTime
       lastTime = now
 
-      setPokemon(prev => prev.map(p => {
-        // Held pokemon don't move on their own
-        if (p.state === 'held') return p
+      setPokemon(prev => {
+        let updated = prev.map(p => {
+          if (p.state === 'held') return p
 
-        // Gathering pokemon walk to their circle position then dance
-        if (p.state === 'gathering') {
+          // Gathering: walk to circle position
+          if (p.state === 'gathering') {
+            const dx = p.targetX - p.x
+            const dy = p.targetY - p.y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < 2) return { ...p, x: p.targetX, y: p.targetY }
+            const step = Math.min(SPEED * 1.5 * (dt / 16), dist)
+            return {
+              ...p,
+              x: p.x + (dx / dist) * step,
+              y: p.y + (dy / dist) * step,
+              facingLeft: dx < 0,
+            }
+          }
+
+          if (p.state === 'idle') {
+            const remaining = p.idleTimer - dt
+            if (remaining > 0) return { ...p, idleTimer: remaining }
+            const t = randomTarget()
+            return { ...p, ...t, state: 'walking' as const, facingLeft: t.targetX < p.x }
+          }
+
+          // Walking
           const dx = p.targetX - p.x
           const dy = p.targetY - p.y
           const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < 2) return { ...p, x: p.targetX, y: p.targetY }
-          const step = Math.min(SPEED * 1.5 * (dt / 16), dist)
+
+          if (dist < 4) {
+            return {
+              ...p,
+              x: p.targetX,
+              y: p.targetY,
+              state: 'idle' as const,
+              idleTimer: 2000 + Math.random() * 4000,
+            }
+          }
+
+          const step = Math.min(SPEED * (dt / 16), dist)
           return {
             ...p,
             x: p.x + (dx / dist) * step,
             y: p.y + (dy / dist) * step,
             facingLeft: dx < 0,
           }
-        }
+        })
 
-        if (p.state === 'idle') {
-          const remaining = p.idleTimer - dt
-          if (remaining > 0) return { ...p, idleTimer: remaining }
-          const t = randomTarget()
-          return { ...p, ...t, state: 'walking' as const, facingLeft: t.targetX < p.x }
-        }
-
-        // Walking
-        const dx = p.targetX - p.x
-        const dy = p.targetY - p.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-
-        if (dist < 4) {
-          return {
-            ...p,
-            x: p.targetX,
-            y: p.targetY,
-            state: 'idle' as const,
-            idleTimer: 2000 + Math.random() * 4000,
+        // Check if any walking/idle pokemon wandered near a gathering → suck them in
+        for (const g of gatheringsRef.current) {
+          for (const p of updated) {
+            if (p.state !== 'walking' && p.state !== 'idle') continue
+            if (p.gatheringId) continue
+            const dist = Math.hypot(p.x - g.centerX, p.y - g.centerY)
+            if (dist < GATHER_RADIUS * 0.7) {
+              // Suck them in!
+              const newIds = [...g.pokemonIds, p.id]
+              // Update gathering state (we'll let the next render pick it up)
+              setGatherings(gs => gs.map(gg =>
+                gg.id === g.id
+                  ? { ...gg, pokemonIds: newIds, flowers: [...gg.flowers, ...spawnFlowers(gg.centerX, gg.centerY, 3)] }
+                  : gg
+              ))
+              const angleStep = (Math.PI * 2) / newIds.length
+              updated = updated.map(pk => {
+                if (pk.id === p.id) {
+                  const idx = newIds.indexOf(pk.id)
+                  const angle = angleStep * idx - Math.PI / 2
+                  return {
+                    ...pk,
+                    state: 'gathering' as const,
+                    gatheringId: g.id,
+                    targetX: g.centerX + Math.cos(angle) * GATHER_CIRCLE_RADIUS,
+                    targetY: g.centerY + Math.sin(angle) * GATHER_CIRCLE_RADIUS,
+                  }
+                }
+                // Also recalc existing members' positions
+                if (pk.gatheringId === g.id) {
+                  const idx = newIds.indexOf(pk.id)
+                  const angle = angleStep * idx - Math.PI / 2
+                  return {
+                    ...pk,
+                    targetX: g.centerX + Math.cos(angle) * GATHER_CIRCLE_RADIUS,
+                    targetY: g.centerY + Math.sin(angle) * GATHER_CIRCLE_RADIUS,
+                  }
+                }
+                return pk
+              })
+              break // one join per tick to keep it clean
+            }
           }
         }
 
-        const step = Math.min(SPEED * (dt / 16), dist)
-        return {
-          ...p,
-          x: p.x + (dx / dist) * step,
-          y: p.y + (dy / dist) * step,
-          facingLeft: dx < 0,
-        }
-      }))
+        return updated
+      })
 
       animRef.current = requestAnimationFrame(tick)
     }
@@ -378,7 +480,7 @@ export default function Park({ pokemon, setPokemon, onClickPokemon, timeOfDay }:
         {pokemon.map(p => (
           <div
             key={p.id}
-            className={`park-sprite ${p.state} ${p.pinned ? 'pinned' : ''} ${p.state === 'held' ? 'held' : ''} ${p.state === 'gathering' ? 'gathering' : ''}`}
+            className={`park-sprite ${p.state} ${p.pinned ? 'pinned' : ''}`}
             style={{
               left: p.x,
               top: p.y,
