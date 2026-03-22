@@ -210,6 +210,74 @@ body {
   50% { transform: translateY(-4px); }
 }
 
+/* held (being dragged) */
+.park-sprite.held {
+  cursor: grabbing;
+  z-index: 50;
+}
+.park-sprite.held img {
+  animation: heldBob 0.3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)) drop-shadow(0 0 8px var(--accent-glow));
+  transform: scale(1.2);
+}
+.park-sprite.held .sprite-name {
+  opacity: 0.9;
+}
+@keyframes heldBob {
+  0%, 100% { transform: scale(1.2) translateY(0); }
+  50% { transform: scale(1.2) translateY(-3px); }
+}
+
+/* gathering (dancing in circle) */
+.park-sprite.gathering img {
+  animation: gatherDance 0.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(255, 180, 200, 0.6));
+}
+@keyframes gatherDance {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(5deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-6px) rotate(-5deg); }
+}
+.park-sprite.gathering .sprite-name {
+  opacity: 0.9;
+  color: #ffb8d0;
+}
+
+/* gathering ring */
+.gathering-ring {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(255, 180, 200, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ringPulse 2s ease-in-out infinite;
+}
+@keyframes ringPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
+  50% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.7; }
+}
+
+/* gathering flower particles */
+.gathering-flower {
+  position: absolute;
+  font-size: 20px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: flowerPop var(--duration, 1.5s) ease-out forwards;
+  animation-delay: var(--delay, 0s);
+  opacity: 0;
+  z-index: 5;
+}
+@keyframes flowerPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0) translateY(0); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) translateY(-10px); }
+  80% { opacity: 0.8; transform: translate(-50%, -50%) scale(1) translateY(-30px); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.6) translateY(-50px); }
+}
+
 /* hover glow + name */
 .sprite-name {
   position: absolute;

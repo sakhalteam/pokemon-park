@@ -23,9 +23,29 @@ export interface ParkPokemon {
   targetX: number        // wandering destination
   targetY: number        // wandering destination
   facingLeft: boolean
-  state: 'walking' | 'idle'
+  state: 'walking' | 'idle' | 'held' | 'gathering'
   idleTimer: number      // ms remaining in idle
   pinned: boolean
+  gatheringId?: number   // which gathering group this pokemon belongs to
+}
+
+/** A group of pokemon playing together */
+export interface Gathering {
+  id: number
+  centerX: number
+  centerY: number
+  pokemonIds: number[]
+  startTime: number
+  flowers: FlowerParticle[]
+}
+
+export interface FlowerParticle {
+  id: number
+  x: number
+  y: number
+  emoji: string
+  delay: number
+  duration: number
 }
 
 export type TimeOfDay = 'day' | 'night'
