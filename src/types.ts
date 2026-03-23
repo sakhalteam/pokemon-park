@@ -23,7 +23,7 @@ export interface ParkPokemon {
   targetX: number
   targetY: number
   facingLeft: boolean
-  state: 'walking' | 'idle' | 'held' | 'gathering' | 'smelling' | 'sitting'
+  state: 'walking' | 'idle' | 'held' | 'gathering' | 'smelling' | 'sitting' | 'eating'
   idleTimer: number
   pinned: boolean
   gatheringId?: number
@@ -38,6 +38,7 @@ export interface Gathering {
   pokemonIds: number[]
   startTime: number
   flowers: FlowerParticle[]
+  isNight?: boolean
 }
 
 export interface FlowerParticle {

@@ -49,14 +49,14 @@ export const PARK_OBJECTS: ParkObject[] = [
   { id: 'r2',  type: 'rock',     emoji: '🪨', x: 1900, y: 1350, baseY: 1355, interactive: false, radius: 0, size: 'sm' },
   { id: 'r3',  type: 'rock',     emoji: '🪨', x: 150,  y: 550,  baseY: 555,  interactive: false, radius: 0, size: 'sm' },
 
-  // === Mushrooms (small decorative) ===
-  { id: 'm1',  type: 'mushroom', emoji: '🍄', x: 350,  y: 800,  baseY: 805,  interactive: false, radius: 0, size: 'sm' },
-  { id: 'm2',  type: 'mushroom', emoji: '🍄', x: 1550, y: 500,  baseY: 505,  interactive: false, radius: 0, size: 'sm' },
-  { id: 'm3',  type: 'mushroom', emoji: '🍄', x: 2050, y: 900,  baseY: 905,  interactive: false, radius: 0, size: 'sm' },
+  // === Mushrooms (small, pokemon can eat them) ===
+  { id: 'm1',  type: 'mushroom', emoji: '🍄', x: 350,  y: 800,  baseY: 805,  interactive: true, radius: 50, size: 'sm' },
+  { id: 'm2',  type: 'mushroom', emoji: '🍄', x: 1550, y: 500,  baseY: 505,  interactive: true, radius: 50, size: 'sm' },
+  { id: 'm3',  type: 'mushroom', emoji: '🍄', x: 2050, y: 900,  baseY: 905,  interactive: true, radius: 50, size: 'sm' },
 
-  // === Berry bushes (decorative) ===
-  { id: 'bb1', type: 'berry',    emoji: '🫐', x: 1200, y: 400,  baseY: 420,  interactive: false, radius: 0, size: 'md' },
-  { id: 'bb2', type: 'berry',    emoji: '🍇', x: 750,  y: 1300, baseY: 1320, interactive: false, radius: 0, size: 'md' },
+  // === Berry bushes (pokemon can eat them) ===
+  { id: 'bb1', type: 'berry',    emoji: '🫐', x: 1200, y: 400,  baseY: 420,  interactive: true, radius: 55, size: 'md' },
+  { id: 'bb2', type: 'berry',    emoji: '🍇', x: 750,  y: 1300, baseY: 1320, interactive: true, radius: 55, size: 'md' },
 
   // === Pond ===
   { id: 'p1',  type: 'pond',     emoji: '💧', x: 1100, y: 900,  baseY: 940,  interactive: false, radius: 0, size: 'lg' },

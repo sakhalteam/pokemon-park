@@ -148,7 +148,84 @@ body {
 }
 .loading-pct { color: var(--muted); font-size: 12px; }
 
-/* ── park viewport ───────────────────────────────────── */
+/* ── 3D viewport ────────────────────────────────────── */
+.park-viewport-3d {
+  flex: 1;
+  width: 100%;
+  cursor: grab;
+}
+.park-viewport-3d canvas {
+  display: block;
+}
+/* gathering particles in 3D */
+.gathering-flower-3d {
+  font-size: 20px;
+  pointer-events: none;
+  animation: flowerPop3d 1.5s ease-out forwards;
+  opacity: 0;
+  display: block;
+  user-select: none;
+}
+@keyframes flowerPop3d {
+  0% { opacity: 0; transform: scale(0) translateY(0); }
+  20% { opacity: 1; transform: scale(1.2) translateY(-10px); }
+  80% { opacity: 0.8; transform: scale(1) translateY(-40px); }
+  100% { opacity: 0; transform: scale(0.6) translateY(-60px); }
+}
+.gathering-flower-3d.night-particle {
+  animation-name: nightFloat3d;
+  font-size: 16px;
+}
+@keyframes nightFloat3d {
+  0% { opacity: 0; transform: scale(0) translateY(0); }
+  15% { opacity: 0.8; transform: scale(1) translateY(-5px); }
+  70% { opacity: 0.6; transform: scale(0.9) translateY(-35px); }
+  100% { opacity: 0; transform: scale(0.5) translateY(-50px); }
+}
+
+.break-it-up-btn {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  color: #e8f0e8;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
+  user-select: none;
+}
+.break-it-up-btn:hover {
+  background: rgba(0, 0, 0, 0.65);
+  transform: scale(1.05);
+}
+
+.sprite-name-3d {
+  font-size: 11px;
+  font-weight: 600;
+  color: #e8f0e8;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  text-transform: capitalize;
+  pointer-events: none;
+  user-select: none;
+}
+.sprite-name-3d.draggable-name {
+  pointer-events: auto;
+  cursor: grab;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  transition: background 0.15s;
+}
+.sprite-name-3d.draggable-name:hover {
+  background: rgba(92, 184, 92, 0.3);
+  cursor: grab;
+}
+
+/* ── park viewport (2D, preserved) ──────────────────── */
 .park-viewport {
   flex: 1;
   overflow: auto;
@@ -247,7 +324,30 @@ body {
 .night .park-deco.lamp {
   filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.6)) drop-shadow(0 0 24px rgba(255, 180, 80, 0.3));
 }
+
+/* lantern light radius — warm glow circle on the ground at night */
+.lantern-light {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 200, 100, 0.15) 0%, rgba(255, 180, 80, 0.06) 50%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: lanternFlicker 3s ease-in-out infinite;
+  z-index: 0;
+}
+@keyframes lanternFlicker {
+  0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
 .park-deco.pond { font-size: 56px; opacity: 0.4; }
+
+/* food items fade in when respawning */
+.park-deco.mushroom,
+.park-deco.berry {
+  transition: opacity 0.5s ease-in;
+}
 
 /* ── park sprites ────────────────────────────────────── */
 .park-sprite {
@@ -305,6 +405,21 @@ body {
   color: #ffb8d0;
 }
 
+/* night gatherings — slower sway, cool-toned glow */
+.night .park-sprite.gathering img {
+  animation: nightGatherSway 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(180, 200, 255, 0.4));
+}
+@keyframes nightGatherSway {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(3deg); }
+  50% { transform: translateY(-1px) rotate(0deg); }
+  75% { transform: translateY(-3px) rotate(-3deg); }
+}
+.night .park-sprite.gathering .sprite-name {
+  color: #b8d0ff;
+}
+
 /* gathering ring */
 .gathering-ring {
   position: absolute;
@@ -319,6 +434,17 @@ body {
 @keyframes ringPulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
   50% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.7; }
+}
+
+/* night gathering ring — cooler, calmer glow */
+.gathering-ring.night-gathering {
+  border-color: rgba(180, 200, 255, 0.25);
+  box-shadow: 0 0 20px rgba(180, 200, 255, 0.1);
+  animation: nightRingPulse 3s ease-in-out infinite;
+}
+@keyframes nightRingPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+  50% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.5; }
 }
 
 /* gathering flower particles */
@@ -339,6 +465,18 @@ body {
   100% { opacity: 0; transform: translate(-50%, -50%) scale(0.6) translateY(-50px); }
 }
 
+/* night gathering particles — slower, gentler float upward */
+.gathering-flower.night-particle {
+  animation-name: nightParticleFloat;
+  font-size: 16px;
+}
+@keyframes nightParticleFloat {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0) translateY(0); }
+  15% { opacity: 0.8; transform: translate(-50%, -50%) scale(1) translateY(-5px); }
+  70% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.9) translateY(-25px); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) translateY(-40px); }
+}
+
 /* smelling a flower */
 .park-sprite.smelling img {
   animation: smellBob 1.2s ease-in-out infinite;
@@ -350,6 +488,23 @@ body {
   60% { transform: translateY(-1px) rotate(4deg); }
 }
 .park-sprite.smelling .sprite-name {
+  opacity: 0.8;
+}
+
+/* eating food (sporadic mini hops) */
+.park-sprite.eating img {
+  animation: eatHop 0.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 220, 100, 0.5));
+}
+@keyframes eatHop {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  15% { transform: translateY(-5px) rotate(-3deg); }
+  30% { transform: translateY(0) rotate(0deg); }
+  55% { transform: translateY(-7px) rotate(4deg); }
+  70% { transform: translateY(0) rotate(0deg); }
+  85% { transform: translateY(-3px) rotate(-2deg); }
+}
+.park-sprite.eating .sprite-name {
   opacity: 0.8;
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchMany } from './api'
 import { ROSTER, PARK_CAPACITY, PARK_WIDTH, PARK_HEIGHT } from './roster'
 import type { PokemonData, ParkPokemon, TimeOfDay } from './types'
-import Park from './Park'
+import Park from './Park3D'
 import PokemonCard from './PokemonCard'
 
 /* ── helpers ─────────────────────────────────────────── */
