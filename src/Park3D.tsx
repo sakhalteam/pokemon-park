@@ -441,6 +441,8 @@ function ParkScene({
   timeOfDay,
   heldId,
   onPickUp,
+  onDissolve,
+  onNameDrag,
 }: {
   pokemon: ParkPokemon[]
   gatherings: Gathering[]
