@@ -6,7 +6,7 @@
 A "meet and greet" pokemon park for Nic's daughter Jojo. NOT a battle stats viewer. Think Animal Crossing museum vibes — Octopath Traveler HD-2D style (2D sprites billboarded in a 3D environment). Tap a pokemon to see its pokedex entry, hear its cry, learn about it. Pin favorites to keep them in the park.
 
 ## Stack
-- Vite + React 19 + TypeScript + Tailwind v4 (@tailwindcss/vite plugin)
+- Vite 8 + React 19 + TypeScript 6 + Tailwind v4 (@tailwindcss/vite plugin)
 - React Three Fiber (@react-three/fiber, @react-three/drei, three) for 3D rendering
 - `base: '/pokemon-park/'` in vite.config.ts
 - Deployed to sakhalteam.github.io/pokemon-park/
@@ -32,9 +32,11 @@ A "meet and greet" pokemon park for Nic's daughter Jojo. NOT a battle stats view
 - **Object interactions**: flower smelling, bench sitting (sprites raised above bench surface), eating (food disappears + respawns)
 - **Assets**: `public/models/` folder ready for GLB drops (Blender exports)
 
+## Island zone
+`zone_pokemon_park` → Pattern B (torii gate + bridge + pokemon characters mesh) → `/pokemon-park/`
+
 ## Pending work (priority order)
 1. Blender GLB scene import — replace procedural ground/objects with exported model. Use `public/models/` folder. Coordinate scale: 24x16 units centered at origin
-2. Zone architecture: pokemon-park links directly from island (no intermediate zone scene)
-3. Hand-pick dropdown for choosing specific pokemon
-4. Nocturnal/diurnal species tied to day/night
-5. Expand roster beyond 53
+2. Hand-pick dropdown for choosing specific pokemon
+3. Nocturnal/diurnal species tied to day/night
+4. Expand roster beyond 53
